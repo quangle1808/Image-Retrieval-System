@@ -1,0 +1,25 @@
+# Django framework
+django>=3.2,<5
+
+# Microsoft Authentication Library for Python
+msal>=1.15.0
+
+# HTTP requests
+requests>=2.28.0
+
+# Environment variable loader
+python-dotenv>=0.21.0
+
+# CLIP and dependencies
+# Official OpenAI CLIP only supports torch <2.0, so pin torch accordingly if issues arise.
+git+https://github.com/openai/CLIP.git
+
+# Torch (PyTorch) for CLIP model
+torch>=1.7.1
+torchvision>=0.8.2
+
+# NumPy for vector math
+numpy>=1.21.0
+
+# Image processing
+Pillow>=8.4.0

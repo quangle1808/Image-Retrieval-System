@@ -1,0 +1,607 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>OneDrive File Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" referrerpolicy="no-referrer" />
+<link href="https://fonts.googleapis.com/css?family=Mulish:400,500,600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Orbitron:700&display=swap" rel="stylesheet">
+<style>
+  /* Loader Animation */
+  .loader {
+    width: fit-content;
+    font-weight: bold;
+    font-family: monospace;
+    font-size: 30px;
+    color:#0000;
+    background: linear-gradient(90deg,#000 25%,#8A9B0F 0 50%,#C02942 0 75%,#00A0B0 0) 0 0/400% 100%;
+    -webkit-background-clip:text;
+    background-clip:text;
+    animation:l10 5s infinite cubic-bezier(0.3,1,0,1);
+    margin: 18px auto 6px auto;
+    text-align: center;
+  }
+  .loader:before {
+    content:"Loading..."
+  }
+  @keyframes l10 {
+    25% {background-position: calc(1*100%/3) 0}
+    50% {background-position: calc(2*100%/3) 0}
+    75% {background-position: calc(3*100%/3) 0}
+    100%{background-position: calc(4*100%/3) 0}
+  }
+
+  body {
+    font-family: 'Mulish', Arial, sans-serif;
+    margin: 0;
+    background-color: #f9f9f9;
+  }
+  header {
+    background-color: #1c99ff;
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h2 a {
+    color: white;
+    text-decoration: none;
+    font-family: inherit;
+  }
+  .top-bar-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 1100px;
+    margin: 38px 0 8px 30px;
+    position: relative;
+    min-height: 60px;
+  }
+  .top-bar-left {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 18px;
+  }
+  .top-bar-center {
+    flex: 1 1 0;
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+    margin-left: 200px;
+  }
+  .up-folder-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: #fff;
+    border: 2px solid #1c99ff;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    transition: background 0.14s, border 0.13s;
+    text-decoration: none;
+    margin-right: 0; /* gap controls spacing */
+  }
+  .up-folder-link:hover {
+    background: #eaf6ff;
+    border-color: #0b80d5;
+  }
+  .up-folder-img {
+    width: 22px;
+    height: 22px;
+    display: block;
+  }
+  .search-form {
+    min-width: 260px;
+    max-width: 640px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    pointer-events: auto;
+  }
+  .custom-search-bar {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 2px solid #1c99ff;
+    border-radius: 12px;
+    padding: 8px 18px;
+    box-shadow: 0 2px 8px rgba(60, 90, 120, 0.04);
+    width: 100%;
+    max-width: 580px;
+    margin: 0 auto;
+    gap: 12px;
+    font-family: inherit;
+  }
+  .search-icon {
+    color: #1c99ff;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    margin-right: 6px;
+  }
+  .custom-search-bar input[type="text"] {
+    border: none;
+    outline: none;
+    font-size: 20px;
+    background: transparent;
+    color: #222;
+    flex: 1;
+    padding: 2px 0;
+    font-family: inherit;
+  }
+  .custom-search-bar input[type="text"]::placeholder {
+    color: #888;
+    font-size: 18px;
+    font-family: inherit;
+  }
+  .filter-nav {
+    display: flex;
+    align-items: flex-end;
+    gap: 32px;
+    margin: 12px 0 0 0;
+    position: relative;
+    font-size: 17px;
+    font-family: inherit;
+    font-weight: 400;
+    color: #25316b;
+    border-bottom: 4px solid #dadada;
+    padding-bottom: 2px;
+    width: max-content;
+    min-width: 420px;
+    z-index: 2;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .filter-link {
+    color: #25316b;
+    text-decoration: none;
+    padding: 0 4px 3px 4px;
+    transition: color 0.13s;
+    font-weight: 400;
+    position: relative;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .filter-link.active {
+    font-weight: 700;
+    color: #212d83;
+    position: relative;
+  }
+  .filter-underline {
+    position: absolute;
+    bottom: -4px;
+    height: 4px;
+    background: linear-gradient(90deg, #465be4, #2b59c3 70%);
+    border-radius: 2px;
+    transition: left 0.23s cubic-bezier(.77,0,.18,1), width 0.23s cubic-bezier(.77,0,.18,1);
+    z-index: 3;
+    pointer-events: none;
+    left: 0;
+    width: 0;
+  }
+  .upload-icon-img {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    vertical-align: middle;
+    display: inline-block;
+  }
+  .upload-form {
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    font-family: inherit;
+  }
+  .upload-form input[type="file"] {
+    display: none;
+  }
+  .upload-pill-btn {
+    display: flex;
+    align-items: center;
+    border: 2px solid #1c99ff;
+    background: #fff;
+    color: #1c99ff;
+    font-size: 20px;
+    font-weight: 600;
+    border-radius: 28px;
+    padding: 7px 24px 7px 16px;
+    cursor: pointer;
+    transition: background 0.18s, box-shadow 0.14s;
+    box-shadow: 0 2px 8px rgba(60, 90, 120, 0.05);
+    outline: none;
+    gap: 12px;
+    font-family: inherit;
+  }
+  .upload-pill-btn:hover, .upload-pill-btn:focus {
+    background: #f5fbff;
+    box-shadow: 0 4px 12px rgba(60, 90, 120, 0.11);
+  }
+  .upload-pill-btn i {
+    font-size: 24px;
+    margin-right: 4px;
+    color: #1c99ff;
+    font-family: inherit;
+  }
+  .upload-label {
+    font-size: 20px;
+    color: #1c99ff;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    user-select: none;
+    font-family: inherit;
+  }
+  #upload-preview {
+    max-width: 90px;
+    max-height: 90px;
+    margin-left: 8px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    display: none;
+    background: #f8f8f8;
+    object-fit: contain;
+  }
+  .grid-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px 32px;
+    justify-content: flex-start;
+    padding: 32px 30px 0 30px;
+    width: 100%;
+    max-width: 100vw;
+  }
+  .item {
+    width: 120px;
+    text-align: center;
+    overflow: hidden;
+    transition: transform 0.2s;
+    font-family: inherit;
+  }
+  .item:hover {
+    transform: scale(1.05);
+  }
+  .item img {
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  .item .name {
+    margin-top: 6px;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: inherit;
+  }
+  .pagination {
+    display: flex;
+    justify-content: center;
+    margin: 20px;
+    flex-wrap: wrap;
+    font-family: inherit;
+  }
+  .pagination a {
+    margin: 0 5px;
+    padding: 6px 12px;
+    text-decoration: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    color: #333;
+    font-family: inherit;
+  }
+  .pagination a:hover {
+    background-color: #eee;
+  }
+  .pagination .active {
+    background-color: #1c99ff;
+    color: white;
+    border: none;
+  }
+  .folderEmpty {
+    text-align: center;
+    margin-top: 40px;
+    font-family: inherit;
+  }
+  .folderEmpty img {
+    width: 250px;
+    opacity: 0.4;
+  }
+  .folderEmpty h5 {
+    margin-top: -60px;
+    font-size: 24px;
+    color: #888;
+    font-family: inherit;
+  }
+  a.folder-link {
+    text-decoration: none;
+    color: inherit;
+    font-family: inherit;
+  }
+  .delete-form {
+    display: inline;
+    font-family: inherit;
+  }
+  .delete-form button {
+    background: #fff2f2;
+    color: #c70000;
+    border: 1px solid #ffdada;
+    border-radius: 4px;
+    padding: 3px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-top: 6px;
+    transition: background 0.14s, color 0.14s;
+    font-family: inherit;
+  }
+  .delete-form button:hover {
+    background: #ffdada;
+    color: #a00000;
+  }
+  @media (max-width: 900px) {
+    .top-bar-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
+      margin: 24px 0 10px 8px;
+      max-width: 99vw;
+      position: static;
+    }
+    .top-bar-center {
+      position: static;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .search-form,
+    .custom-search-bar {
+      max-width: 100%;
+      min-width: 0;
+    }
+    .filter-nav {
+      margin-left: 8px;
+      min-width: 99vw;
+      font-size: 18px;
+      gap: 16px;
+    }
+    .filter-underline {
+      width: 85px;
+      left: 70px;
+    }
+  }
+
+  /*Title in Orbitron Font*/
+  .orbitron-title, .orbitron-title a {
+    font-family: 'Orbitron', Arial, sans-serif !important;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h2 class="orbitron-title"><a href="{% url 'home' %}">OneDrive Explorer</a></h2>
+  {% if request.session.access_token %}
+    <a href="{% url 'logout' %}" style="color:white; font-weight:bold;" title="Logout">
+      <img src="{% static 'explorer/logout.png' %}" alt="Logout" style="width:30px;height:30px;vertical-align:middle;margin-right:7px;">
+    </a>
+  {% else %}
+    <a href="{% url 'login' %}" style="color:white; font-weight:bold;">Login with Microsoft</a>
+  {% endif %}
+</header>
+
+{% if request.session.access_token %}
+  <div class="top-bar-row">
+    <div class="top-bar-left">
+      {% if folder_id and folder_id != "root" %}
+        <a href="?folder={{ parent_id }}" class="up-folder-link" title="Up one folder">
+          <img src="{% static 'explorer/back-icon.png' %}" alt="Up one folder" class="up-folder-img">
+        </a>
+      {% endif %}
+      <form id="uploadForm" class="upload-form" action="{% url 'upload_file' %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="file" accept="image/*,.pdf,.doc,.docx" id="fileInput">
+        <input type="hidden" name="folder_id" value="{{ folder_id }}">
+        <button type="button" class="upload-pill-btn" onclick="document.getElementById('fileInput').click()">
+          <img src="{% static 'explorer/cloud-upload.png' %}" alt="Upload" class="upload-icon-img" />
+          <span class="upload-label">Upload</span>
+        </button>
+        <img id="upload-preview" alt="Preview"/>
+      </form>
+    </div>
+    <div class="top-bar-center">
+      <form method="get" action="{% url 'home' %}" class="search-form">
+        <div class="custom-search-bar">
+          <span class="search-icon">
+            <i class="fas fa-search"></i>
+          </span>
+          <input type="text" name="query" placeholder="Search..." value="{{ request.GET.query }}">
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- Loader: shown when user submits search -->
+  <div id="loadingIndicator" class="loader" style="display:none"></div>
+  <!-- Filter bar directly below search bar -->
+  <div class="filter-nav" id="filterNav">
+    <a href="?filter=all{% if query %}&query={{ query }}{% endif %}" class="filter-link {% if filter_type == 'all' %}active{% endif %}">All</a>
+    <a href="?filter=document{% if query %}&query={{ query }}{% endif %}" class="filter-link {% if filter_type == 'document' %}active{% endif %}">Document</a>
+    <a href="?filter=image{% if query %}&query={{ query }}{% endif %}" class="filter-link {% if filter_type == 'image' %}active{% endif %}">Image</a>
+    <a href="?filter=audio{% if query %}&query={{ query }}{% endif %}" class="filter-link {% if filter_type == 'audio' %}active{% endif %}">Audio</a>
+    <a href="?filter=video{% if query %}&query={{ query }}{% endif %}" class="filter-link {% if filter_type == 'video' %}active{% endif %}">Video</a>
+    <div class="filter-underline" id="filterUnderline"></div>
+  </div>
+
+{% endif %}
+
+{% if not query %}
+  <div class="grid-container">
+    {% for item in items %}
+      {% if item.type == 'folder' %}
+        <div class="item">
+          <a class="folder-link" href="?folder={{ item.id }}">
+            <img src="{% static 'explorer/folder-icon.png' %}" alt="Folder" />
+            <div class="name">{{ item.name }}</div>
+          </a>
+        </div>
+      {% else %}
+        <div class="item">
+          {% if item.thumbnail %}
+            <img src="{{ item.thumbnail }}" alt="{{ item.name }}">
+          {% else %}
+            <img src="{% static 'explorer/file-icon.png' %}" alt="{{ item.name }}">
+          {% endif %}
+          <div class="name">{{ item.name }}</div>
+          <form class="delete-form" action="{% url 'delete_file' item.id %}" method="post">
+            {% csrf_token %}
+            <button type="submit">Delete</button>
+          </form>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="grid-container">
+    {% if images %}
+      {% for name, url, score, thumb in images %}
+        <div class="item">
+          <a href="{{ url }}" target="_blank" title="{{ name }}">
+            {% if thumb %}
+              <img src="{{ thumb }}" alt="{{ name }}">
+            {% else %}
+              <img src="{{ url }}" alt="{{ name }}">
+            {% endif %}
+          </a>
+          <div class="name">{{ name }}</div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="folderEmpty">
+        <img src="{% static 'explorer/concept/2808349.jpg' %}" alt="No Results">
+        <h5>No matching images found!</h5>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if page_obj %}
+  <div class="pagination">
+    {% if page_obj.number > 3 %}
+      <a href="?page=1{% if query %}&query={{ query }}{% endif %}{% if folder_id %}&folder={{ folder_id }}{% endif %}">1</a>
+      {% if page_obj.number > 4 %}
+        <span>...</span>
+      {% endif %}
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+        {% if page_obj.number == num %}
+          <a class="active" href="#">{{ num }}</a>
+        {% else %}
+          <a href="?page={{ num }}{% if query %}&query={{ query }}{% endif %}{% if folder_id %}&folder={{ folder_id }}{% endif %}">{{ num }}</a>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+    {% if page_obj.number < page_obj.paginator.num_pages|add:'-2' %}
+      {% if page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
+        <span>...</span>
+      {% endif %}
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&query={{ query }}{% endif %}{% if folder_id %}&folder={{ folder_id }}{% endif %}">{{ page_obj.paginator.num_pages }}</a>
+    {% endif %}
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if query %}&query={{ query }}{% endif %}{% if folder_id %}&folder={{ folder_id }}{% endif %}">&laquo;</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if query %}&query={{ query }}{% endif %}{% if folder_id %}&folder={{ folder_id }}{% endif %}">&raquo;</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const preview = document.getElementById('upload-preview');
+const ICONS = {
+  'doc': "/static/explorer/doc-icon.png",
+  'docx': "/static/explorer/doc-icon.png",
+  'default': "/static/explorer/file-icon.png"
+};
+
+fileInput?.addEventListener('change', function(event) {
+  const file = event.target.files[0];
+  if (!file) {
+    preview.src = "";
+    preview.style.display = "none";
+    return;
+  }
+  const ext = file.name.split('.').pop().toLowerCase();
+  const isImage = file.type.startsWith("image/");
+  const isPDF = ext === "pdf";
+  const isDoc = ext === "doc" || ext === "docx";
+
+  if (isImage) {
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      preview.src = evt.target.result;
+      preview.style.display = "inline-block";
+    }
+    reader.readAsDataURL(file);
+  } else if (isPDF) {
+    preview.src = "/static/explorer/pdf-icon.png";
+    preview.style.display = "inline-block";
+  } else if (isDoc) {
+    preview.src = ICONS['doc'];
+    preview.style.display = "inline-block";
+  } else {
+    preview.src = ICONS['default'];
+    preview.style.display = "inline-block";
+  }
+
+  setTimeout(function(){
+    document.getElementById('uploadForm').submit();
+  }, 200);
+});
+
+// Move underline under .active tab on load and on click
+document.addEventListener("DOMContentLoaded", function() {
+  function moveUnderline() {
+    const active = document.querySelector('.filter-link.active');
+    const underline = document.getElementById('filterUnderline');
+    if (active && underline) {
+      const rect = active.getBoundingClientRect();
+      const parentRect = active.parentElement.getBoundingClientRect();
+      underline.style.left = (rect.left - parentRect.left) + "px";
+      underline.style.width = rect.width + "px";
+    }
+  }
+  moveUnderline();
+  window.addEventListener('resize', moveUnderline);
+  document.querySelectorAll('.filter-link').forEach((link, idx, all) => {
+    link.addEventListener('click', function(e){
+      e.preventDefault();
+      all.forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+      moveUnderline();
+    });
+  });
+
+  // Show loading animation when search is submitted
+  const searchForm = document.querySelector('.search-form');
+  if (searchForm) {
+    searchForm.addEventListener('submit', function() {
+      document.getElementById('loadingIndicator').style.display = 'block';
+    });
+  }
+});
+</script>
+</body>
+</html>
